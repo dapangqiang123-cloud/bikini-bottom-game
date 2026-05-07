@@ -3449,12 +3449,11 @@ function openOnlineSetup() {
   if (old) old.remove();
 
   const charOptions = ONLINE.CHARS.map(c => `
-    <div onclick="selectOnlineChar('${c.key}')" id="oc-${c.key}"
+    <div data-charkey="${c.key}" id="oc-${c.key}"
       style="background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);
-      border-radius:14px;padding:12px 8px;cursor:pointer;text-align:center;transition:.2s;"
-      onmouseover="this.style.borderColor='${c.color}'" onmouseout="if(window._selChar!=='${c.key}')this.style.borderColor='rgba(255,255,255,.15)'">
-      <img src="${c.img}" style="width:44px;height:60px;object-fit:contain;display:block;margin:0 auto 6px;">
-      <div style="font-size:11px;font-weight:900;color:${c.color};">${c.name}</div>
+      border-radius:14px;padding:12px 8px;cursor:pointer;text-align:center;transition:.2s;">
+      <img src="${c.img}" style="width:44px;height:60px;object-fit:contain;display:block;margin:0 auto 6px;pointer-events:none;">
+      <div style="font-size:11px;font-weight:900;color:${c.color};pointer-events:none;">${c.name}</div>
     </div>
   `).join('');
 
@@ -3466,34 +3465,44 @@ function openOnlineSetup() {
       border-radius:22px;padding:28px 24px;text-align:center;max-width:360px;width:92%;">
       <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">🌐 联机模式</div>
       <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:18px;">选择你的角色，和家人一起探索比基尼堡！<br><span style="color:#ffcc44;">⚠️ 所有人需在同一地图（Stage）才能看见彼此</span></div>
-
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+      <div id="online-char-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
         ${charOptions}
       </div>
-
       <div style="margin-bottom:14px;">
         <input id="online-nickname" placeholder="输入你的昵称（可选）" maxlength="8"
           style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);
           border-radius:10px;padding:9px 12px;color:#fff;font-size:13px;font-family:var(--font);outline:none;"/>
       </div>
-
       <div style="display:flex;gap:10px;">
-        <button onclick="startOnline()" style="flex:1;background:linear-gradient(135deg,#4a9eff,#7b4aff);
+        <button id="online-start-btn" style="flex:1;background:linear-gradient(135deg,#4a9eff,#7b4aff);
           color:#fff;border:none;border-radius:12px;padding:13px;font-family:var(--font);
           font-size:14px;font-weight:900;cursor:pointer;">🚀 进入联机</button>
-        <button onclick="document.getElementById('online-setup-overlay').remove()"
+        <button id="online-close-btn"
           style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);
           color:rgba(255,255,255,.5);border-radius:12px;padding:13px 16px;cursor:pointer;font-family:var(--font);">✕</button>
       </div>
-
-      ${ONLINE._enabled ? `<button onclick="ONLINE.leave();document.getElementById('online-setup-overlay').remove();"
+      ${ONLINE._enabled ? `<button id="online-leave-btn"
         style="margin-top:10px;width:100%;background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3);
         color:#ff8888;border-radius:10px;padding:9px;cursor:pointer;font-family:var(--font);font-size:12px;">
         📴 退出联机模式</button>` : ''}
     </div>`;
   document.body.appendChild(d);
 
-  // 默认选第一个角色
+  // 事件委托：角色选择
+  document.getElementById('online-char-grid').addEventListener('click', e => {
+    const card = e.target.closest('[data-charkey]');
+    if (!card) return;
+    selectOnlineChar(card.dataset.charkey);
+  });
+  // 进入联机
+  document.getElementById('online-start-btn').addEventListener('click', startOnline);
+  // 关闭
+  document.getElementById('online-close-btn').addEventListener('click', () => d.remove());
+  // 退出联机
+  const leaveBtn = document.getElementById('online-leave-btn');
+  if (leaveBtn) leaveBtn.addEventListener('click', () => { ONLINE.leave(); d.remove(); });
+
+  // 默认选第一个
   selectOnlineChar(ONLINE.CHARS[0].key);
 }
 
