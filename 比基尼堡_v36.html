@@ -1238,7 +1238,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font);backgro
 <!-- KRAB SCREEN -->
 <div id="krab-screen" class="screen">
   <div style="position:absolute;inset:0;background:#0a1500;">
-    <img src="assets/img_09.jpeg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45;">
+    <img src="assets/img_09.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45;">
   </div>
   <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,20,0,.4),rgba(0,10,0,.85));z-index:1;"></div>
   <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;gap:12px;padding:0 14px;background:rgba(0,15,0,.9);border-bottom:1.5px solid rgba(255,200,0,.25);z-index:10;">
@@ -1545,20 +1545,36 @@ async function loadCloudSave(){
   try{
     const {data,error}=await ONLINE._sb.from('game_save')
       .select('data,updated_at').eq('save_key','family_save').single();
-    if(error||!data?.data||!Object.keys(data.data).length)return;
+    if(error)return;
+    const cloudData=data?.data;
+    // 云端存档为空（tasks=0且无建筑）时不覆盖本地
+    const cloudEmpty=!cloudData||(!cloudData.tasks&&!cloudData.coins&&!Object.keys(cloudData.buildings||{}).length);
+    if(cloudEmpty){
+      // 把本地存档推到云端
+      const local=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+      if(local){
+        ONLINE._sb.from('game_save').update({data:local,updated_at:new Date().toISOString()})
+          .eq('save_key','family_save').then(()=>{
+            localStorage.setItem(SAVE_KEY+'_ts',Date.now().toString());
+          });
+      }
+      return;
+    }
     const localTs=parseInt(localStorage.getItem(SAVE_KEY+'_ts')||'0');
     const cloudTs=new Date(data.updated_at).getTime();
     if(cloudTs>localTs){
-      _applySaveData(data.data);
-      localStorage.setItem(SAVE_KEY,JSON.stringify(data.data));
+      _applySaveData(cloudData);
+      localStorage.setItem(SAVE_KEY,JSON.stringify(cloudData));
       localStorage.setItem(SAVE_KEY+'_ts',cloudTs.toString());
       updHUD();renderHotspots();clearMapChars();renderMapChars();
       showToast('☁️ 已同步家庭存档！');
     }
   }catch(e){console.warn('云存档读取失败:',e);}
 }
+let _cloudSaveSubscribed = false;
 function subscribeCloudSave(){
-  if(!ONLINE||!ONLINE._sb)return;
+  if(_cloudSaveSubscribed||!ONLINE||!ONLINE._sb)return;
+  _cloudSaveSubscribed = true;
   ONLINE._sb.channel('game-save-sync')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'game_save',
       filter:'save_key=eq.family_save'},async(payload)=>{
