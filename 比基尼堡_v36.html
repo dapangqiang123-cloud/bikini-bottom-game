@@ -1566,7 +1566,7 @@ async function loadCloudSave(){
       _applySaveData(cloudData);
       localStorage.setItem(SAVE_KEY,JSON.stringify(cloudData));
       localStorage.setItem(SAVE_KEY+'_ts',cloudTs.toString());
-      updHUD();renderHotspots();clearMapChars();renderMapChars();
+      updHUD();renderHotspots();renderBuildings();clearMapChars();renderMapChars();
       showToast('☁️ 已同步家庭存档！');
     }
   }catch(e){console.warn('云存档读取失败:',e);}
@@ -1586,7 +1586,7 @@ function subscribeCloudSave(){
         _applySaveData(d);
         localStorage.setItem(SAVE_KEY,JSON.stringify(d));
         localStorage.setItem(SAVE_KEY+'_ts',cloudTs.toString());
-        updHUD();renderHotspots();clearMapChars();renderMapChars();
+        updHUD();renderHotspots();renderBuildings();clearMapChars();renderMapChars();
         showToast('🔄 家庭存档已更新！');
       }
     }).subscribe();
@@ -3215,10 +3215,10 @@ const ONLINE = {
 
   // 可选角色配置
   CHARS: [
-    { key:'jinr',    name:'瑾儿',   img:'assets/outfit_sponge_stand.png',   color:'#FFD700' },
-    { key:'dad',     name:'爸爸',   img:'assets/jinr_dad_stand.png',         color:'#88ccff' },
-    { key:'mom',     name:'妈妈',   img:'assets/jinr_mom_stand.png',         color:'#ffaacc' },
-    { key:'auntie',  name:'小姨',   img:'assets/jinr_mom_stand.png',         color:'#aaffaa' },
+    { key:'jinr',    name:'瑾儿',   img:'assets/img_19.png',          color:'#FFD700' },
+    { key:'dad',     name:'爸爸',   img:'assets/jinr_dad_stand.png',   color:'#88ccff' },
+    { key:'mom',     name:'妈妈',   img:'assets/jinr_mom_stand.png',   color:'#ffaacc' },
+    { key:'auntie',  name:'小姨',   img:'assets/jinr_mom_stand.png',   color:'#aaffaa' },
   ],
 
   _sb: null,
@@ -3251,6 +3251,9 @@ const ONLINE = {
     this._myChar = this.CHARS.find(c => c.key === charKey) || this.CHARS[0];
     this._myNickname = nickname || this._myChar.name;
     this._enabled = true;
+    // 持久化角色选择
+    localStorage.setItem('bb_online_char', charKey);
+    localStorage.setItem('bb_online_nick', this._myNickname);
 
     // 拉取共享存档
     await loadCloudSave();
@@ -4355,6 +4358,12 @@ const G={
     ONLINE.init();
     loadCloudSave().then(()=>{
       subscribeCloudSave();
+      // 自动恢复上次联机角色
+      const savedChar = localStorage.getItem('bb_online_char');
+      const savedNick = localStorage.getItem('bb_online_nick');
+      if(savedChar){
+        ONLINE.join(savedChar, savedNick||'').catch(()=>{});
+      }
     });
     const w=document.getElementById('walker');
     w.style.left='44%';w.style.bottom='22%';
