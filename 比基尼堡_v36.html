@@ -3143,10 +3143,10 @@ const ONLINE = {
 
   // 可选角色配置
   CHARS: [
-    { key:'jinr',    name:'瑾儿',   img:'assets/img_19.png',   color:'#FFD700' },
-    { key:'dad',     name:'爸爸',   img:'assets/jinr_dad_stand.png',  color:'#88ccff' },
-    { key:'mom',     name:'妈妈',   img:'assets/jinr_mom_stand.png',  color:'#ffaacc' },
-    { key:'auntie',  name:'小姨',   img:'assets/jinr_mom.png',        color:'#aaffaa' },
+    { key:'jinr',    name:'瑾儿',   img:'assets/outfit_sponge_stand.png',   color:'#FFD700' },
+    { key:'dad',     name:'爸爸',   img:'assets/jinr_dad_stand.png',         color:'#88ccff' },
+    { key:'mom',     name:'妈妈',   img:'assets/jinr_mom_stand.png',         color:'#ffaacc' },
+    { key:'auntie',  name:'小姨',   img:'assets/jinr_mom_stand.png',         color:'#aaffaa' },
   ],
 
   _sb: null,
@@ -3191,7 +3191,13 @@ const ONLINE = {
     this._channel
       .on('broadcast', { event: 'move' }, ({ payload }) => {
         if (payload.sessionId !== this._sessionId) {
-          this._updateOtherPlayer(payload);
+          // 只渲染同一地图的玩家
+          if ((payload.stage ?? 0) === (S.stage ?? 0)) {
+            this._updateOtherPlayer(payload);
+          } else {
+            // 不同地图：隐藏该玩家元素
+            this._removeOtherPlayer(payload.sessionId);
+          }
         }
       })
       .on('broadcast', { event: 'leave' }, ({ payload }) => {
@@ -3205,7 +3211,7 @@ const ONLINE = {
     // 定时清理超时玩家（30秒无活动视为离线）
     setInterval(() => this._cleanStale(), 5000);
 
-    showToast(`🌐 ${this._myNickname} 已进入联机模式！`);
+    showToast(`🌐 ${this._myNickname} 已进入联机模式！当前地图：Stage ${S.stage}`);
     this._renderMyLabel();
   },
 
@@ -3244,6 +3250,7 @@ const ONLINE = {
         charKey: this._myChar.key,
         img: this._myChar.img,
         color: this._myChar.color,
+        stage: S.stage ?? 0,  // ← 带上当前地图
         x, y, dir,
         ts: Date.now(),
       }
@@ -3329,11 +3336,20 @@ const ONLINE = {
 
   // 切换主角图片 + 在自己角色上方显示联机标签
   _renderMyLabel() {
-    // 切换主角图片为选择的角色
+    // 按角色切换走路帧（WS_cur=stand, W1_cur=walk1, W2_cur=walk2）
+    const frameMap = {
+      jinr:   { stand:'assets/img_19.png',          w1:'assets/img_19.png',         w2:'assets/img_19.png' },
+      dad:    { stand:'assets/jinr_dad_stand.png',   w1:'assets/jinr_dad_walkL.png', w2:'assets/jinr_dad_walkR.png' },
+      mom:    { stand:'assets/jinr_mom_stand.png',   w1:'assets/jinr_mom_walkL.png', w2:'assets/jinr_mom_walkR.png' },
+      auntie: { stand:'assets/jinr_mom_stand.png',   w1:'assets/jinr_mom_walkL.png', w2:'assets/jinr_mom_walkR.png' },
+    };
+    const frames = frameMap[this._myChar.key] || frameMap.jinr;
+    WS_cur = frames.stand;
+    W1_cur = frames.w1;
+    W2_cur = frames.w2;
+    // 立刻刷新wimg为stand图
     const wimg = document.getElementById('wimg');
-    if (wimg && this._myChar.img) {
-      wimg.src = this._myChar.img;
-    }
+    if (wimg) wimg.src = WS_cur;
     // 移除旧标签
     const old = document.getElementById('online-my-label');
     if (old) old.remove();
@@ -3359,7 +3375,7 @@ const ONLINE = {
       'z-index:20',
     ].join(';') + ';';
     lbl.textContent = '👑 ' + this._myNickname;
-    walker.style.position = 'absolute'; // 确保子元素定位正常
+    walker.style.position = 'absolute';
     walker.appendChild(lbl);
   },
 };
@@ -3386,7 +3402,7 @@ function openOnlineSetup() {
     <div style="background:linear-gradient(135deg,#0d1b3e,#1a0a3e);border:2px solid rgba(100,150,255,.35);
       border-radius:22px;padding:28px 24px;text-align:center;max-width:360px;width:92%;">
       <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">🌐 联机模式</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:18px;">选择你的角色，和家人一起探索比基尼堡！</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:18px;">选择你的角色，和家人一起探索比基尼堡！<br><span style="color:#ffcc44;">⚠️ 所有人需在同一地图（Stage）才能看见彼此</span></div>
 
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
         ${charOptions}
