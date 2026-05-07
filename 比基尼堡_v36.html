@@ -3236,10 +3236,9 @@ const ONLINE = {
   // 广播自己当前位置
   async _broadcastSelf() {
     if (!this._channel) return;
-    const walker = document.getElementById('walker');
-    if (!walker) return;
-    const x = parseFloat(walker.style.left) || WALK.x || 44;
-    const y = parseFloat(walker.style.bottom) || WALK.y || 22;
+    // 用WALK.x/y（百分比坐标），不用walker的px值
+    const x = typeof WALK.x === 'number' ? WALK.x : 44;
+    const y = typeof WALK.y === 'number' ? WALK.y : 22;
     const dir = WALK._facing || 'right';
     await this._channel.send({
       type: 'broadcast',
@@ -3250,26 +3249,38 @@ const ONLINE = {
         charKey: this._myChar.key,
         img: this._myChar.img,
         color: this._myChar.color,
-        stage: S.stage ?? 0,  // ← 带上当前地图
+        stage: S.stage ?? 0,
         x, y, dir,
         ts: Date.now(),
       }
     });
   },
 
-  // 更新/创建其他玩家元素
+  // 更新/创建其他玩家元素（x/y是百分比坐标，和WALK.x/y一致）
   _updateOtherPlayer(data) {
     const { sessionId, nickname, img, color, x, y, dir } = data;
     const mc = document.getElementById('map-content');
     if (!mc) return;
+    const mw = mc.offsetWidth, mh = mc.offsetHeight;
+    // 透视缩放（和_updatePos一致）
+    const yMin = WALK_ZONE?.yMin ?? 8;
+    const yMax = WALK_ZONE?.yMax ?? 35;
+    const minScale = WALK_ZONE?.minScale ?? 0.45;
+    const maxScale = WALK_ZONE?.maxScale ?? 1.1;
+    const baseSize = WALK_ZONE?.baseSize ?? 80;
+    const yRatio = 1 - (y - yMin) / ((yMax - yMin) || 1);
+    const scale = minScale + (maxScale - minScale) * Math.max(0, Math.min(1, yRatio));
+    const sz = baseSize * scale;
+    const pxL = mw * x / 100 - sz / 2;
+    const pxB = mh * y / 100 - sz * 0.13;
 
     let entry = this._otherPlayers[sessionId];
     if (!entry) {
-      // 新玩家：创建元素
       const wrap = document.createElement('div');
       wrap.className = 'online-walker';
       wrap.dataset.sid = sessionId;
-      wrap.style.cssText = `position:absolute;left:${x}%;bottom:${y}%;transform:translateX(-50%);z-index:15;pointer-events:none;transition:left .18s,bottom .18s;`;
+      wrap.style.cssText = `position:absolute;pointer-events:none;transition:left .18s,bottom .18s;`;
+      wrap.style.zIndex = 8 + Math.round(yRatio * 10);
 
       const lbl = document.createElement('div');
       lbl.style.cssText = `position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:900;color:${color};white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.9);background:rgba(0,0,0,.4);border-radius:8px;padding:1px 6px;`;
@@ -3277,7 +3288,7 @@ const ONLINE = {
 
       const imgEl = document.createElement('img');
       imgEl.src = img;
-      imgEl.style.cssText = 'width:60px;display:block;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));';
+      imgEl.style.cssText = 'width:100%;display:block;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));';
       imgEl.onerror = () => { imgEl.src = 'assets/img_40.png'; };
 
       wrap.appendChild(lbl);
@@ -3288,18 +3299,15 @@ const ONLINE = {
       showToast(`👥 ${nickname} 加入了比基尼堡！`);
     }
 
-    // 更新位置
-    const ratio = 1 - (y / 79.3);
-    const scale = 0.55 + 0.45 * Math.max(0, Math.min(1, ratio));
-    const sz = 65 * scale;
-    entry.el.style.left = x + '%';
-    entry.el.style.bottom = y + '%';
+    // 更新位置和尺寸（px）
     entry.el.style.width = sz + 'px';
-    if (entry.imgEl) entry.imgEl.style.transform = dir === 'L' ? 'scaleX(-1)' : 'scaleX(1)';
+    entry.el.style.left = pxL + 'px';
+    entry.el.style.bottom = pxB + 'px';
+    entry.el.style.zIndex = 8 + Math.round(yRatio * 10);
+    if (entry.imgEl) {
+      entry.imgEl.style.transform = dir === 'left' ? 'scaleX(-1)' : 'scaleX(1)';
+    }
     entry.ts = Date.now();
-
-    // 同步自己位置到DB（低频）
-    this._upsertSelf();
   },
 
   _removeOtherPlayer(sessionId) {
