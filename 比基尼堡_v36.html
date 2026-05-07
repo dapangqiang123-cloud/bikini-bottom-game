@@ -865,7 +865,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font);backgro
   0%  {transform:translateX(120px) scaleX(-1);}
   100%{transform:translateX(-60px) scaleX(-1);}
 }
-</style></head><body>
+</style>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head><body>
 
 
 <!-- 室内场景 -->
@@ -1006,7 +1009,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font);backgro
       <button style="background:linear-gradient(135deg,#FFD700,#ff9a00);color:#5a2d00;border:none;border-radius:20px;padding:3px 11px;font-family:var(--font);font-size:11px;font-weight:900;cursor:pointer;" onclick="SHOP.open()">🏪 商店</button>
       <button id="bgm-btn" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px;font-family:var(--font);font-size:13px;cursor:pointer;margin-left:2px;" onclick="BGM.toggle()" title="音乐开关">🎵</button>
       <button style="position:relative;background:rgba(139,90,43,.25);color:#cc9955;border:1.5px solid rgba(200,150,80,.3);border-radius:20px;padding:3px 10px;font-family:var(--font);font-size:11px;font-weight:800;cursor:pointer;margin-left:2px;" onclick="TOWN.open()" title="建材仓库">🏗 仓库<span id="mat-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff4444;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:900;">0</span></button>
-      <button style="background:rgba(136,255,255,.15);color:#88ffff;border:1.5px solid rgba(136,255,255,.3);border-radius:20px;padding:3px 10px;font-family:var(--font);font-size:11px;font-weight:800;cursor:pointer;margin-left:2px;" onclick="openMpSetup()" title="多人模式">👥</button>
+      <button style="background:rgba(136,255,255,.15);color:#88ffff;border:1.5px solid rgba(136,255,255,.3);border-radius:20px;padding:3px 10px;font-family:var(--font);font-size:11px;font-weight:800;cursor:pointer;margin-left:2px;" onclick="openOnlineSetup()" title="联机模式">🌐</button>
       <img class="h-av" src="assets/img_04.png" alt="" id="h-av">
     </div>
   </div>
@@ -1663,7 +1666,7 @@ function renderBuildings(){
       if(!cfg)return;
 
       const wrap=document.createElement('div');
-      wrap.className='map-npc';
+      wrap.className='map-npc map-npc-wrap';
       wrap.dataset.rid=rid;
 
       // NPC位置 = 建筑坐标 + 固定偏移（自动跟随建筑，建筑拖哪NPC跟哪）
@@ -1721,25 +1724,33 @@ function renderBuildings(){
 
       // ── jinr_parents 特殊处理：显示爸爸（右）+ 妈妈（左）两个NPC ──
       if(rid==='jinr_parents'){
-        const parentNpcSize=mw*0.09; // 统一尺寸，比默认稍大
-        // 爸爸（右侧）
+        const parentNpcSize=mw*0.044; // 统一尺寸
+        const bldBottomY=bldCenterY+bldW*0.5;
+        const npcY=Math.max(0,Math.min(mh-parentNpcSize, bldBottomY-parentNpcSize*0.9));
+        const gap=parentNpcSize*0.01; // 极小间距
+        const totalW=parentNpcSize*2+gap;
+        const offsetRight=parentNpcSize*0.6; // 整体往右偏
+        const startX=bldCenterX-totalW/2+offsetRight;
+        const momX=startX+parentNpcSize/2;
+        const dadX=startX+parentNpcSize+gap+parentNpcSize/2;
+        // 爸爸
         wrap.style.width=parentNpcSize+'px';
-        wrap.style.left=(nx+parentNpcSize*0.15-parentNpcSize/2).toFixed(1)+'px';
-        wrap.style.top=Math.max(0,Math.min(mh-parentNpcSize,ny)).toFixed(1)+'px';
-        wrap.style.animation='npcBounceSandy 2.2s ease-in-out infinite';
-        // 妈妈（左侧）
+        wrap.style.left=(dadX-parentNpcSize/2).toFixed(1)+'px';
+        wrap.style.top=npcY.toFixed(1)+'px';
+        wrap.style.animation='npcSwaySquid 2.2s ease-in-out infinite'; // 轻微摆动
+        // 妈妈
         const momWrap=document.createElement('div');
         momWrap.className='map-npc map-npc-wrap';
         momWrap.dataset.rid='jinr_parents_mom';
         momWrap.style.cssText=[
           'position:absolute',
-          `left:${(nx-parentNpcSize*1.1-parentNpcSize/2).toFixed(1)}px`,
-          `top:${Math.max(0,Math.min(mh-parentNpcSize,ny)).toFixed(1)}px`,
+          `left:${(momX-parentNpcSize/2).toFixed(1)}px`,
+          `top:${npcY.toFixed(1)}px`,
           `width:${parentNpcSize}px`,
           'pointer-events:none',
           `z-index:${16+Math.round(cfg.top)}`,
-          'animation:npcNodPuff 2.5s ease-in-out infinite',
-          'animation-delay:0.4s',
+          'animation:npcSwaySquid 2.4s ease-in-out infinite', // 轻微摆动
+          'animation-delay:0.3s',
           'transform-origin:bottom center',
         ].join(';')+';';
         const momImg=document.createElement('img');
@@ -3122,6 +3133,309 @@ const MP={
   },
 };
 
+// ══════════════════════════════════════════════
+// 🌐 ONLINE · Supabase 联机系统
+// 支持4人跨设备实时同步位置+角色
+// ══════════════════════════════════════════════
+const ONLINE = {
+  SUPABASE_URL: 'https://bozinsotjtqfcofszijd.supabase.co',
+  SUPABASE_KEY: 'sb_publishable_1fhX-tjhofaT1PXRBVZKyg_thi6a-Qb',
+
+  // 可选角色配置
+  CHARS: [
+    { key:'jinr',    name:'瑾儿',   img:'assets/img_19.png',   color:'#FFD700' },
+    { key:'dad',     name:'爸爸',   img:'assets/jinr_dad_stand.png',  color:'#88ccff' },
+    { key:'mom',     name:'妈妈',   img:'assets/jinr_mom_stand.png',  color:'#ffaacc' },
+    { key:'auntie',  name:'小姨',   img:'assets/jinr_mom.png',        color:'#aaffaa' },
+  ],
+
+  _sb: null,
+  _channel: null,
+  _sessionId: null,
+  _myChar: null,
+  _myNickname: null,
+  _otherPlayers: {}, // { sessionId: { el, data } }
+  _syncInterval: null,
+  _enabled: false,
+
+  // 初始化Supabase
+  init() {
+    if (this._sb) return;
+    try {
+      this._sb = supabase.createClient(this.SUPABASE_URL, this.SUPABASE_KEY);
+      this._sessionId = localStorage.getItem('bb_session') || this._genId();
+      localStorage.setItem('bb_session', this._sessionId);
+    } catch(e) { console.warn('Supabase init failed:', e); }
+  },
+
+  _genId() {
+    return 'p_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  },
+
+  // 加入联机房间
+  async join(charKey, nickname) {
+    this.init();
+    if (!this._sb) return showToast('❌ 联机初始化失败');
+    this._myChar = this.CHARS.find(c => c.key === charKey) || this.CHARS[0];
+    this._myNickname = nickname || this._myChar.name;
+    this._enabled = true;
+
+    // 写入自己到players表
+    await this._upsertSelf();
+
+    // 订阅Realtime广播
+    this._channel = this._sb.channel('bikini-bottom-room', {
+      config: { broadcast: { self: false } }
+    });
+
+    this._channel
+      .on('broadcast', { event: 'move' }, ({ payload }) => {
+        if (payload.sessionId !== this._sessionId) {
+          this._updateOtherPlayer(payload);
+        }
+      })
+      .on('broadcast', { event: 'leave' }, ({ payload }) => {
+        this._removeOtherPlayer(payload.sessionId);
+      })
+      .subscribe();
+
+    // 定时同步自己位置
+    this._syncInterval = setInterval(() => this._broadcastSelf(), 200);
+
+    // 定时清理超时玩家（30秒无活动视为离线）
+    setInterval(() => this._cleanStale(), 5000);
+
+    showToast(`🌐 ${this._myNickname} 已进入联机模式！`);
+    this._renderMyLabel();
+  },
+
+  // 离开联机
+  async leave() {
+    if (!this._enabled) return;
+    this._enabled = false;
+    clearInterval(this._syncInterval);
+    if (this._channel) {
+      await this._channel.send({ type:'broadcast', event:'leave', payload:{ sessionId:this._sessionId } });
+      this._sb.removeChannel(this._channel);
+      this._channel = null;
+    }
+    // 清除其他玩家元素
+    Object.keys(this._otherPlayers).forEach(id => this._removeOtherPlayer(id));
+    // 清除自己标签
+    const lbl = document.getElementById('online-my-label');
+    if (lbl) lbl.remove();
+    showToast('👋 已退出联机模式');
+  },
+
+  // 广播自己当前位置
+  async _broadcastSelf() {
+    if (!this._channel) return;
+    const walker = document.getElementById('walker');
+    if (!walker) return;
+    const x = parseFloat(walker.style.left) || WALK.x || 44;
+    const y = parseFloat(walker.style.bottom) || WALK.y || 22;
+    const dir = WALK._facing || 'right';
+    await this._channel.send({
+      type: 'broadcast',
+      event: 'move',
+      payload: {
+        sessionId: this._sessionId,
+        nickname: this._myNickname,
+        charKey: this._myChar.key,
+        img: this._myChar.img,
+        color: this._myChar.color,
+        x, y, dir,
+        ts: Date.now(),
+      }
+    });
+  },
+
+  // 更新/创建其他玩家元素
+  _updateOtherPlayer(data) {
+    const { sessionId, nickname, img, color, x, y, dir } = data;
+    const mc = document.getElementById('map-content');
+    if (!mc) return;
+
+    let entry = this._otherPlayers[sessionId];
+    if (!entry) {
+      // 新玩家：创建元素
+      const wrap = document.createElement('div');
+      wrap.className = 'online-walker';
+      wrap.dataset.sid = sessionId;
+      wrap.style.cssText = `position:absolute;left:${x}%;bottom:${y}%;transform:translateX(-50%);z-index:15;pointer-events:none;transition:left .18s,bottom .18s;`;
+
+      const lbl = document.createElement('div');
+      lbl.style.cssText = `position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:900;color:${color};white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.9);background:rgba(0,0,0,.4);border-radius:8px;padding:1px 6px;`;
+      lbl.textContent = nickname;
+
+      const imgEl = document.createElement('img');
+      imgEl.src = img;
+      imgEl.style.cssText = 'width:60px;display:block;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));';
+      imgEl.onerror = () => { imgEl.src = 'assets/img_40.png'; };
+
+      wrap.appendChild(lbl);
+      wrap.appendChild(imgEl);
+      mc.appendChild(wrap);
+      entry = { el: wrap, imgEl, lblEl: lbl, ts: Date.now() };
+      this._otherPlayers[sessionId] = entry;
+      showToast(`👥 ${nickname} 加入了比基尼堡！`);
+    }
+
+    // 更新位置
+    const ratio = 1 - (y / 79.3);
+    const scale = 0.55 + 0.45 * Math.max(0, Math.min(1, ratio));
+    const sz = 65 * scale;
+    entry.el.style.left = x + '%';
+    entry.el.style.bottom = y + '%';
+    entry.el.style.width = sz + 'px';
+    if (entry.imgEl) entry.imgEl.style.transform = dir === 'L' ? 'scaleX(-1)' : 'scaleX(1)';
+    entry.ts = Date.now();
+
+    // 同步自己位置到DB（低频）
+    this._upsertSelf();
+  },
+
+  _removeOtherPlayer(sessionId) {
+    const entry = this._otherPlayers[sessionId];
+    if (entry) {
+      entry.el.remove();
+      delete this._otherPlayers[sessionId];
+    }
+  },
+
+  _cleanStale() {
+    const now = Date.now();
+    Object.entries(this._otherPlayers).forEach(([id, entry]) => {
+      if (now - entry.ts > 8000) {
+        this._removeOtherPlayer(id);
+        showToast('👋 一位玩家离线了');
+      }
+    });
+  },
+
+  async _upsertSelf() {
+    if (!this._sb || !this._myChar) return;
+    const walker = document.getElementById('walker');
+    const x = walker ? (parseFloat(walker.style.left) || WALK.x || 44) : 44;
+    const y = walker ? (parseFloat(walker.style.bottom) || WALK.y || 22) : 22;
+    await this._sb.from('players').upsert({
+      session_id: this._sessionId,
+      nickname: this._myNickname,
+      character: this._myChar.key,
+      x, y,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'session_id' });
+  },
+
+  // 切换主角图片 + 在自己角色上方显示联机标签
+  _renderMyLabel() {
+    // 切换主角图片为选择的角色
+    const wimg = document.getElementById('wimg');
+    if (wimg && this._myChar.img) {
+      wimg.src = this._myChar.img;
+    }
+    // 移除旧标签
+    const old = document.getElementById('online-my-label');
+    if (old) old.remove();
+    // 加标签到walker
+    const walker = document.getElementById('walker');
+    if (!walker) return;
+    const lbl = document.createElement('div');
+    lbl.id = 'online-my-label';
+    lbl.style.cssText = [
+      'position:absolute',
+      'top:-22px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'font-size:10px',
+      'font-weight:900',
+      `color:${this._myChar.color}`,
+      'white-space:nowrap',
+      'text-shadow:0 1px 4px rgba(0,0,0,.9)',
+      'background:rgba(0,0,0,.5)',
+      'border-radius:8px',
+      'padding:1px 6px',
+      'pointer-events:none',
+      'z-index:20',
+    ].join(';') + ';';
+    lbl.textContent = '👑 ' + this._myNickname;
+    walker.style.position = 'absolute'; // 确保子元素定位正常
+    walker.appendChild(lbl);
+  },
+};
+
+// 联机选角UI
+function openOnlineSetup() {
+  const old = document.getElementById('online-setup-overlay');
+  if (old) old.remove();
+
+  const charOptions = ONLINE.CHARS.map(c => `
+    <div onclick="selectOnlineChar('${c.key}')" id="oc-${c.key}"
+      style="background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);
+      border-radius:14px;padding:12px 8px;cursor:pointer;text-align:center;transition:.2s;"
+      onmouseover="this.style.borderColor='${c.color}'" onmouseout="if(window._selChar!=='${c.key}')this.style.borderColor='rgba(255,255,255,.15)'">
+      <img src="${c.img}" style="width:44px;height:60px;object-fit:contain;display:block;margin:0 auto 6px;">
+      <div style="font-size:11px;font-weight:900;color:${c.color};">${c.name}</div>
+    </div>
+  `).join('');
+
+  const d = document.createElement('div');
+  d.id = 'online-setup-overlay';
+  d.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(0,0,30,.88);display:flex;align-items:center;justify-content:center;';
+  d.innerHTML = `
+    <div style="background:linear-gradient(135deg,#0d1b3e,#1a0a3e);border:2px solid rgba(100,150,255,.35);
+      border-radius:22px;padding:28px 24px;text-align:center;max-width:360px;width:92%;">
+      <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">🌐 联机模式</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:18px;">选择你的角色，和家人一起探索比基尼堡！</div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+        ${charOptions}
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <input id="online-nickname" placeholder="输入你的昵称（可选）" maxlength="8"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);
+          border-radius:10px;padding:9px 12px;color:#fff;font-size:13px;font-family:var(--font);outline:none;"/>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button onclick="startOnline()" style="flex:1;background:linear-gradient(135deg,#4a9eff,#7b4aff);
+          color:#fff;border:none;border-radius:12px;padding:13px;font-family:var(--font);
+          font-size:14px;font-weight:900;cursor:pointer;">🚀 进入联机</button>
+        <button onclick="document.getElementById('online-setup-overlay').remove()"
+          style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);
+          color:rgba(255,255,255,.5);border-radius:12px;padding:13px 16px;cursor:pointer;font-family:var(--font);">✕</button>
+      </div>
+
+      ${ONLINE._enabled ? `<button onclick="ONLINE.leave();document.getElementById('online-setup-overlay').remove();"
+        style="margin-top:10px;width:100%;background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3);
+        color:#ff8888;border-radius:10px;padding:9px;cursor:pointer;font-family:var(--font);font-size:12px;">
+        📴 退出联机模式</button>` : ''}
+    </div>`;
+  document.body.appendChild(d);
+
+  // 默认选第一个角色
+  selectOnlineChar(ONLINE.CHARS[0].key);
+}
+
+window._selChar = null;
+function selectOnlineChar(key) {
+  window._selChar = key;
+  ONLINE.CHARS.forEach(c => {
+    const el = document.getElementById('oc-' + c.key);
+    if (!el) return;
+    el.style.borderColor = c.key === key ? ONLINE.CHARS.find(x=>x.key===key).color : 'rgba(255,255,255,.15)';
+    el.style.background = c.key === key ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.08)';
+  });
+}
+
+async function startOnline() {
+  const charKey = window._selChar || 'jinr';
+  const nickname = document.getElementById('online-nickname')?.value.trim() || '';
+  document.getElementById('online-setup-overlay')?.remove();
+  await ONLINE.join(charKey, nickname);
+}
+
 // 启动多人模式的UI入口
 function openMpSetup(){
   const d=document.createElement('div');
@@ -3693,16 +4007,20 @@ const WALK={
           const imgEl=wrap?wrap.querySelector('img'):null;
           if(imgEl)startNpcFrameAnim(rid,imgEl,NPC_FRAMES[rid]);
         }
-        // 爸妈走路帧：靠近时随机切走路方向
+        // 爸妈靠近动效
         if(rid&&PARENTS_FRAMES[rid]){
           const dirs=['walkL','walkR','walkD'];
           const dir=dirs[Math.floor(Math.random()*dirs.length)];
+          // 爸爸：切走路帧 + 加速动画
           const dadWrap=document.querySelector(`.map-npc-wrap[data-rid="${rid}"]`);
           const dadImg=dadWrap?dadWrap.querySelector('img'):null;
           if(dadImg)dadImg.src=PARENTS_FRAMES[rid][dir];
+          if(dadWrap)dadWrap.style.animation='npcLiftLarry 0.5s ease-in-out infinite';
+          // 妈妈：切走路帧 + 加速动画
           const momWrap=document.querySelector('.map-npc-wrap[data-rid="jinr_parents_mom"]');
           const momImg=momWrap?momWrap.querySelector('img'):null;
           if(momImg&&PARENTS_FRAMES['jinr_parents_mom'])momImg.src=PARENTS_FRAMES['jinr_parents_mom'][dir];
+          if(momWrap)momWrap.style.animation='npcSwaySquid 0.5s ease-in-out infinite';
         }
       } else {
         hint.style.display='none';
@@ -3711,14 +4029,16 @@ const WALK={
         // 离开：停止序列帧，恢复静态图+CSS动画
         if(prev&&prev.sc){
           stopNpcFrameAnim(prev.sc);
-          // 爸妈恢复stand
+          // 爸妈恢复stand + 原始动画
           if(PARENTS_FRAMES[prev.sc]){
             const dadWrap=document.querySelector(`.map-npc-wrap[data-rid="${prev.sc}"]`);
             const dadImg=dadWrap?dadWrap.querySelector('img'):null;
             if(dadImg)dadImg.src=PARENTS_FRAMES[prev.sc].stand;
+            if(dadWrap)dadWrap.style.animation='npcSwaySquid 2.2s ease-in-out infinite';
             const momWrap=document.querySelector('.map-npc-wrap[data-rid="jinr_parents_mom"]');
             const momImg=momWrap?momWrap.querySelector('img'):null;
             if(momImg&&PARENTS_FRAMES['jinr_parents_mom'])momImg.src=PARENTS_FRAMES['jinr_parents_mom'].stand;
+            if(momWrap)momWrap.style.animation='npcSwaySquid 2.4s ease-in-out infinite';
           }
         }
       }
