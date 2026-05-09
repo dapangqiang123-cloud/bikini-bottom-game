@@ -1563,7 +1563,10 @@ async function loadCloudSave(){
     const localTs=parseInt(localStorage.getItem(SAVE_KEY+'_ts')||'0');
     const cloudTs=new Date(data.updated_at).getTime();
     if(cloudTs>localTs){
+      // ⚠️ outfit是个人私有状态，不随云端存档覆盖
+      const myOutfit = S.outfit || 'default';
       _applySaveData(cloudData);
+      S.outfit = myOutfit;
       localStorage.setItem(SAVE_KEY,JSON.stringify(cloudData));
       localStorage.setItem(SAVE_KEY+'_ts',cloudTs.toString());
       updHUD();renderHotspots();renderBuildings();clearMapChars();renderMapChars();
@@ -1583,7 +1586,10 @@ function subscribeCloudSave(){
       const localTs=parseInt(localStorage.getItem(SAVE_KEY+'_ts')||'0');
       const cloudTs=new Date(payload.new.updated_at).getTime();
       if(cloudTs>localTs+300){
+        // ⚠️ outfit是个人私有状态（载具/服装），不随云端存档覆盖
+        const myOutfit = S.outfit || 'default';
         _applySaveData(d);
+        S.outfit = myOutfit; // 强制保留自己的outfit
         localStorage.setItem(SAVE_KEY,JSON.stringify(d));
         localStorage.setItem(SAVE_KEY+'_ts',cloudTs.toString());
         updHUD();renderHotspots();renderBuildings();clearMapChars();renderMapChars();
@@ -1796,32 +1802,34 @@ function renderBuildings(){
 
       // ── jinr_parents 特殊处理：显示爸爸（右）+ 妈妈（左）两个NPC ──
       if(rid==='jinr_parents'){
-        const parentNpcSize=mw*0.044; // 统一尺寸
+        const dadSize=mw*0.058;   // 爸爸更大
+        const momSize=mw*0.047;   // 妈妈稍小
         const bldBottomY=bldCenterY+bldW*0.5;
-        const npcY=Math.max(0,Math.min(mh-parentNpcSize, bldBottomY-parentNpcSize*0.9));
-        const gap=parentNpcSize*0.01; // 极小间距
-        const totalW=parentNpcSize*2+gap;
-        const offsetRight=parentNpcSize*0.6; // 整体往右偏
+        const npcY_dad=Math.max(0,Math.min(mh-dadSize, bldBottomY-dadSize*0.9));
+        const npcY_mom=Math.max(0,Math.min(mh-momSize, bldBottomY-momSize*0.9));
+        const gap=dadSize*0.01;
+        const totalW=dadSize+momSize+gap;
+        const offsetRight=dadSize*0.6;
         const startX=bldCenterX-totalW/2+offsetRight;
-        const momX=startX+parentNpcSize/2;
-        const dadX=startX+parentNpcSize+gap+parentNpcSize/2;
+        const momX=startX+momSize/2;
+        const dadX=startX+momSize+gap+dadSize/2;
         // 爸爸
-        wrap.style.width=parentNpcSize+'px';
-        wrap.style.left=(dadX-parentNpcSize/2).toFixed(1)+'px';
-        wrap.style.top=npcY.toFixed(1)+'px';
-        wrap.style.animation='npcSwaySquid 2.2s ease-in-out infinite'; // 轻微摆动
+        wrap.style.width=dadSize+'px';
+        wrap.style.left=(dadX-dadSize/2).toFixed(1)+'px';
+        wrap.style.top=npcY_dad.toFixed(1)+'px';
+        wrap.style.animation='npcSwaySquid 2.2s ease-in-out infinite';
         // 妈妈
         const momWrap=document.createElement('div');
         momWrap.className='map-npc map-npc-wrap';
         momWrap.dataset.rid='jinr_parents_mom';
         momWrap.style.cssText=[
           'position:absolute',
-          `left:${(momX-parentNpcSize/2).toFixed(1)}px`,
-          `top:${npcY.toFixed(1)}px`,
-          `width:${parentNpcSize}px`,
+          `left:${(momX-momSize/2).toFixed(1)}px`,
+          `top:${npcY_mom.toFixed(1)}px`,
+          `width:${momSize}px`,
           'pointer-events:none',
           `z-index:${16+Math.round(cfg.top)}`,
-          'animation:npcSwaySquid 2.4s ease-in-out infinite', // 轻微摆动
+          'animation:npcSwaySquid 2.4s ease-in-out infinite',
           'animation-delay:0.3s',
           'transform-origin:bottom center',
         ].join(';')+';';
@@ -3316,6 +3324,10 @@ const ONLINE = {
     const x = typeof WALK.x === 'number' ? WALK.x : 44;
     const y = typeof WALK.y === 'number' ? WALK.y : 22;
     const dir = WALK._facing || 'right';
+    // 广播自己当前的outfit（载具/服装），让其他人看到正确的皮肤
+    const myOutfit = (this._myChar.key === 'jinr') ? (S.outfit || 'default') : 'default';
+    const od = OUTFIT_DATA[myOutfit] || OUTFIT_DATA.default;
+    const outfitImg = od.walkerStand || this._myChar.img;
     await this._channel.send({
       type: 'broadcast',
       event: 'move',
@@ -3323,7 +3335,8 @@ const ONLINE = {
         sessionId: this._sessionId,
         nickname: this._myNickname,
         charKey: this._myChar.key,
-        img: this._myChar.img,
+        img: outfitImg,          // 使用当前outfit图而非固定角色图
+        baseImg: this._myChar.img, // 保留原始角色图备用
         color: this._myChar.color,
         stage: S.stage ?? 0,
         x, y, dir,
@@ -4118,16 +4131,28 @@ const WALK={
         if(rid&&PARENTS_FRAMES[rid]){
           const dirs=['walkL','walkR','walkD'];
           const dir=dirs[Math.floor(Math.random()*dirs.length)];
-          // 爸爸：切走路帧 + 加速动画
+          // 爸爸：切走路帧 + 激动动画（图片404时保持stand）
           const dadWrap=document.querySelector(`.map-npc-wrap[data-rid="${rid}"]`);
           const dadImg=dadWrap?dadWrap.querySelector('img'):null;
-          if(dadImg)dadImg.src=PARENTS_FRAMES[rid][dir];
+          if(dadImg){
+            const dadWalkSrc=PARENTS_FRAMES[rid][dir];
+            const tmpD=new Image();
+            tmpD.onload=()=>{dadImg.src=dadWalkSrc;};
+            tmpD.onerror=()=>{};
+            tmpD.src=dadWalkSrc;
+          }
           if(dadWrap)dadWrap.style.animation='npcLiftLarry 0.5s ease-in-out infinite';
-          // 妈妈：切走路帧 + 加速动画
+          // 妈妈：切走路帧 + 激动动画
           const momWrap=document.querySelector('.map-npc-wrap[data-rid="jinr_parents_mom"]');
           const momImg=momWrap?momWrap.querySelector('img'):null;
-          if(momImg&&PARENTS_FRAMES['jinr_parents_mom'])momImg.src=PARENTS_FRAMES['jinr_parents_mom'][dir];
-          if(momWrap)momWrap.style.animation='npcSwaySquid 0.5s ease-in-out infinite';
+          if(momImg&&PARENTS_FRAMES['jinr_parents_mom']){
+            const momWalkSrc=PARENTS_FRAMES['jinr_parents_mom'][dir];
+            const tmpM=new Image();
+            tmpM.onload=()=>{momImg.src=momWalkSrc;};
+            tmpM.onerror=()=>{};
+            tmpM.src=momWalkSrc;
+          }
+          if(momWrap)momWrap.style.animation='npcBounceSandy 0.6s ease-in-out infinite';
         }
       } else {
         hint.style.display='none';
