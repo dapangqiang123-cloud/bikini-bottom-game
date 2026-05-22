@@ -1,0 +1,1154 @@
+
+<h2 class="sr-only">海信空调 AI 视频故事板生成器 v4 — 五层完整创作文档工具</h2>
+
+<style>
+:root {
+  --hisense-blue: #0047BB;
+  --hisense-gold: #D4AF37;
+  --hisense-blue-light: #e8eef8;
+  --hisense-gold-light: #faf6e8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.sb-wrap {
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  padding: 1rem 0;
+  max-width: 100%;
+}
+
+.sb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  background: var(--color-background-secondary);
+  margin-bottom: 16px;
+}
+
+.sb-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sb-logo-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #0047BB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sb-logo-badge i { color: #fff; font-size: 16px; }
+
+.sb-title-text { font-size: 15px; font-weight: 500; }
+.sb-subtitle-text { font-size: 12px; color: var(--color-text-secondary); margin-top: 1px; }
+
+.sb-version {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 0.5px solid var(--color-border-secondary);
+  color: var(--color-text-secondary);
+}
+
+.layer-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+  padding-bottom: 0;
+  overflow-x: auto;
+}
+
+.layer-tab {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -0.5px;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.layer-tab.active {
+  color: #0047BB;
+  border-bottom-color: #0047BB;
+  font-weight: 500;
+}
+
+.layer-tab:hover:not(.active) { color: var(--color-text-primary); }
+
+.layer-panel { display: none; }
+.layer-panel.active { display: block; }
+
+.field-group {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 5px;
+  display: block;
+  font-weight: 500;
+}
+
+.field-label span {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+input[type=text], textarea, select {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  resize: vertical;
+}
+
+input[type=text]:focus, textarea:focus, select:focus {
+  border-color: #0047BB;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+.card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-primary);
+}
+
+.card-title i { font-size: 15px; color: #0047BB; }
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.tag {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 0.5px solid var(--color-border-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.1s;
+  user-select: none;
+}
+
+.tag:hover { border-color: #0047BB; color: #0047BB; }
+.tag.selected { background: #0047BB; color: #fff; border-color: #0047BB; }
+.tag.gold-selected { background: #D4AF37; color: #4a3800; border-color: #D4AF37; }
+
+.shot-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.shot-card {
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.shot-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-background-secondary);
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+}
+
+.shot-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0047BB;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shot-title-input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+  outline: none;
+  color: var(--color-text-primary);
+}
+
+.shot-duration {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.shot-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+}
+
+.shot-field {
+  padding: 8px 10px;
+  border-right: 0.5px solid var(--color-border-tertiary);
+}
+
+.shot-field:last-child { border-right: none; }
+
+.shot-field-label {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shot-field textarea {
+  font-size: 12px;
+  border: none;
+  padding: 0;
+  resize: none;
+  min-height: 52px;
+  background: transparent;
+}
+
+.shot-field textarea:focus { border: none; outline: none; }
+
+.shot-extra {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  border-top: 0.5px solid var(--color-border-tertiary);
+}
+
+.shot-extra-field {
+  padding: 6px 10px;
+  border-right: 0.5px solid var(--color-border-tertiary);
+}
+
+.shot-extra-field:last-child { border-right: none; }
+
+.shot-extra-field input {
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  background: transparent;
+}
+
+.ref-upload-box {
+  border: 0.5px dashed var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  margin-bottom: 10px;
+}
+
+.ref-upload-box:hover { border-color: #0047BB; }
+.ref-upload-box i { font-size: 24px; color: var(--color-text-tertiary); display: block; margin-bottom: 6px; }
+.ref-upload-box p { font-size: 12px; color: var(--color-text-secondary); }
+.ref-upload-box strong { color: #0047BB; }
+
+.ref-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ref-item {
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  position: relative;
+}
+
+.ref-placeholder {
+  aspect-ratio: 1;
+  background: var(--color-background-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.ref-placeholder i { font-size: 20px; color: var(--color-text-tertiary); }
+.ref-placeholder span { font-size: 11px; color: var(--color-text-tertiary); }
+
+.ref-label {
+  font-size: 11px;
+  padding: 4px 8px;
+  text-align: center;
+  border-top: 0.5px solid var(--color-border-tertiary);
+  color: var(--color-text-secondary);
+  background: var(--color-background-primary);
+}
+
+.weight-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #D4AF37;
+  color: #4a3800;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.prompt-output {
+  background: var(--color-background-secondary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  min-height: 80px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: var(--font-mono);
+  margin-top: 8px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--border-radius-md);
+  font-size: 13px;
+  cursor: pointer;
+  border: 0.5px solid var(--color-border-secondary);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  transition: all 0.1s;
+}
+
+.btn:hover { background: var(--color-background-secondary); }
+.btn:active { transform: scale(0.98); }
+
+.btn-primary {
+  background: #0047BB;
+  color: #fff;
+  border-color: #0047BB;
+}
+
+.btn-primary:hover { background: #003a99; }
+
+.btn-gold {
+  background: #D4AF37;
+  color: #4a3800;
+  border-color: #D4AF37;
+}
+
+.btn-gold:hover { background: #c49e2a; }
+
+.progress-bar {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 16px;
+}
+
+.progress-step {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-border-tertiary);
+  transition: background 0.3s;
+}
+
+.progress-step.done { background: #0047BB; }
+
+.info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  border: 0.5px solid var(--color-border-tertiary);
+  margin: 2px;
+}
+
+.divider {
+  height: 0.5px;
+  background: var(--color-border-tertiary);
+  margin: 14px 0;
+}
+
+.scene-preview {
+  aspect-ratio: 16/9;
+  border-radius: var(--border-radius-md);
+  background: var(--color-background-secondary);
+  border: 0.5px solid var(--color-border-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.scene-preview-inner {
+  text-align: center;
+  color: var(--color-text-tertiary);
+}
+
+.scene-preview-inner i { font-size: 32px; display: block; margin-bottom: 6px; }
+.scene-preview-inner p { font-size: 12px; }
+
+.camera-path-canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--border-radius-md);
+  border: 0.5px solid var(--color-border-tertiary);
+  background: var(--color-background-secondary);
+  cursor: crosshair;
+}
+
+.output-section {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.output-tab-row {
+  display: flex;
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+}
+
+.output-tab {
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s;
+}
+
+.output-tab.active { color: #0047BB; border-bottom-color: #0047BB; font-weight: 500; }
+
+.output-content { padding: 14px; }
+
+.segment-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-md);
+  background: var(--color-background-secondary);
+  margin-bottom: 6px;
+}
+
+.seg-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #D4AF37;
+  color: #4a3800;
+  font-size: 10px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.seg-label { font-size: 12px; font-weight: 500; flex: 1; }
+.seg-meta { font-size: 11px; color: var(--color-text-tertiary); }
+</style>
+
+<div class="sb-wrap">
+
+<div class="sb-header">
+  <div class="sb-logo">
+    <div class="sb-logo-badge"><i class="ti ti-movie" aria-hidden="true"></i></div>
+    <div>
+      <div class="sb-title-text">海信空调 AI故事板系统</div>
+      <div class="sb-subtitle-text">Hisense Storyboard Generator · 五层完整创作框架</div>
+    </div>
+  </div>
+  <span class="sb-version">v4.0</span>
+</div>
+
+<div class="progress-bar" id="progressBar">
+  <div class="progress-step done" id="ps1"></div>
+  <div class="progress-step" id="ps2"></div>
+  <div class="progress-step" id="ps3"></div>
+  <div class="progress-step" id="ps4"></div>
+  <div class="progress-step" id="ps5"></div>
+</div>
+
+<div class="layer-tabs" id="layerTabs">
+  <button class="layer-tab active" onclick="switchLayer(0)">
+    <i class="ti ti-clipboard-list" aria-hidden="true"></i> 层1 项目参数
+  </button>
+  <button class="layer-tab" onclick="switchLayer(1)">
+    <i class="ti ti-users" aria-hidden="true"></i> 层2 视觉开发
+  </button>
+  <button class="layer-tab" onclick="switchLayer(2)">
+    <i class="ti ti-3d-cube-sphere" aria-hidden="true"></i> 层3 导演设计
+  </button>
+  <button class="layer-tab" onclick="switchLayer(3)">
+    <i class="ti ti-layout-grid" aria-hidden="true"></i> 层4 分镜脚本
+  </button>
+  <button class="layer-tab" onclick="switchLayer(4)">
+    <i class="ti ti-file-export" aria-hidden="true"></i> 层5 输出提示词
+  </button>
+</div>
+
+<!-- 层1：项目参数 -->
+<div class="layer-panel active" id="layer0">
+  <div class="card">
+    <div class="card-title"><i class="ti ti-info-circle" aria-hidden="true"></i> 基础信息</div>
+    <div class="grid-2">
+      <div class="field-group">
+        <label class="field-label">项目标题</label>
+        <input type="text" id="projTitle" placeholder="例：世界杯倒计时·埃菲尔铁塔篇" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">系列编号 <span>如：WC-07</span></label>
+        <input type="text" id="projId" placeholder="WC-01" />
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="field-group">
+        <label class="field-label">目标平台</label>
+        <select id="platform">
+          <option>抖音竖屏 9:16</option>
+          <option>微信视频号 9:16</option>
+          <option>横屏广告 16:9</option>
+          <option>方形 1:1</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">视频总时长</label>
+        <select id="duration">
+          <option>15秒以内</option>
+          <option>15-30秒（需分段）</option>
+          <option>30-60秒（需分段）</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">分辨率要求</label>
+        <select id="resolution">
+          <option>1080p</option>
+          <option>720p（测试/草稿）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><i class="ti ti-palette" aria-hidden="true"></i> 创意方向</div>
+    <div class="field-group">
+      <label class="field-label">视频类型</label>
+      <div class="tag-row" id="typeTag">
+        <span class="tag" onclick="toggleTag(this,'type')">品牌TVC</span>
+        <span class="tag" onclick="toggleTag(this,'type')">产品展示</span>
+        <span class="tag" onclick="toggleTag(this,'type')">情感故事</span>
+        <span class="tag" onclick="toggleTag(this,'type')">轻幽默</span>
+        <span class="tag" onclick="toggleTag(this,'type')">地标打卡</span>
+        <span class="tag" onclick="toggleTag(this,'type')">倒计时系列</span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">整体基调</label>
+      <div class="tag-row" id="toneTag">
+        <span class="tag" onclick="toggleTag(this,'tone')">热血震撼</span>
+        <span class="tag" onclick="toggleTag(this,'tone')">轻松幽默</span>
+        <span class="tag" onclick="toggleTag(this,'tone')">电影质感</span>
+        <span class="tag" onclick="toggleTag(this,'tone')">年轻活力</span>
+        <span class="tag" onclick="toggleTag(this,'tone')">史诗大气</span>
+        <span class="tag" onclick="toggleTag(this,'tone')">科技感</span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">全球地标 <span>世界杯系列核心场景</span></label>
+      <div class="tag-row" id="landmarkTag">
+        <span class="tag" onclick="toggleTag(this,'landmark')">埃菲尔铁塔·巴黎</span>
+        <span class="tag" onclick="toggleTag(this,'landmark')">科隆体育场·德国</span>
+        <span class="tag" onclick="toggleTag(this,'landmark')">伯纳乌·马德里</span>
+        <span class="tag" onclick="toggleTag(this,'landmark')">温布利·伦敦</span>
+        <span class="tag" onclick="toggleTag(this,'landmark')">圣地亚哥·智利</span>
+        <span class="tag" onclick="toggleTag(this,'landmark')">自定义</span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">限制条件 <span>标注后AI生成时规避</span></label>
+      <input type="text" id="restriction" placeholder="例：不出现人脸、无品牌logo竞品、无现代代元素..." />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><i class="ti ti-devices" aria-hidden="true"></i> Seedance 分段规划</div>
+    <div class="field-group">
+      <label class="field-label">分段数量 <span>每段8-10秒最佳，15秒上限</span></label>
+      <div class="tag-row" id="segTag">
+        <span class="tag" onclick="setSeg(1,this)">1段（≤15s）</span>
+        <span class="tag selected" onclick="setSeg(2,this)">2段（≤30s）</span>
+        <span class="tag" onclick="setSeg(3,this)">3段（≤45s）</span>
+        <span class="tag" onclick="setSeg(4,this)">4段（≤60s）</span>
+      </div>
+    </div>
+    <div id="segPlan">
+      <div class="segment-row">
+        <div class="seg-num">1</div>
+        <div class="seg-label">第一段（开篇/建立）</div>
+        <div class="seg-meta">文生视频 · 8-10s · 720p草稿</div>
+      </div>
+      <div class="segment-row">
+        <div class="seg-num">2</div>
+        <div class="seg-label">第二段（高潮/收尾）</div>
+        <div class="seg-meta">@Video1保持色调 · 8-10s</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="switchLayer(1)">下一步：视觉开发 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 层2：视觉开发 -->
+<div class="layer-panel" id="layer1">
+  <div class="card">
+    <div class="card-title"><i class="ti ti-air-conditioning" aria-hidden="true"></i> 产品参考图 <span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">Seedance @产品图权重70%</span></div>
+    <div class="ref-grid">
+      <div class="ref-item">
+        <div class="ref-placeholder">
+          <i class="ti ti-plus" aria-hidden="true"></i>
+          <span>正面图</span>
+        </div>
+        <div class="weight-badge">70%</div>
+        <div class="ref-label">主参考 @产品正面</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-placeholder">
+          <i class="ti ti-plus" aria-hidden="true"></i>
+          <span>侧面图</span>
+        </div>
+        <div class="weight-badge">30%</div>
+        <div class="ref-label">辅参考 @产品侧面</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-placeholder">
+          <i class="ti ti-plus" aria-hidden="true"></i>
+          <span>场景渲染图</span>
+        </div>
+        <div class="ref-label">环境参考 @场景</div>
+      </div>
+    </div>
+    <div style="margin-top:10px; padding:8px 10px; background:var(--color-background-secondary); border-radius:var(--border-radius-md); font-size:12px; color:var(--color-text-secondary); line-height:1.6;">
+      <i class="ti ti-bulb" aria-hidden="true" style="color:#D4AF37;"></i>
+      <strong>GPT Image 生图提示词模板：</strong><br>
+      海信空调[型号]，[正面/侧面/45度角]视图，白色极简背景，产品摄影级，4K超清，无阴影，海信蓝#0047BB配色细节
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><i class="ti ti-map-pin" aria-hidden="true"></i> 场景概念图</div>
+    <div class="scene-preview">
+      <div class="scene-preview-inner">
+        <i class="ti ti-photo" aria-hidden="true"></i>
+        <p>粘贴场景概念图或填写GPT Image提示词</p>
+      </div>
+    </div>
+    <textarea id="scenePrompt" rows="3" placeholder="场景GPT Image提示词：例如「埃菲尔铁塔夜景，蓝金色灯光，世界杯氛围，人群欢呼，电影级构图，超广角」"></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><i class="ti ti-box" aria-hidden="true"></i> 关键道具 / 品牌元素</div>
+    <div class="grid-3">
+      <div class="field-group">
+        <label class="field-label">道具1</label>
+        <input type="text" placeholder="例：海信LOGO发光版" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">道具2</label>
+        <input type="text" placeholder="例：世界杯奖杯" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">道具3</label>
+        <input type="text" placeholder="例：倒计时数字" />
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">品牌色应用方式</label>
+      <div class="tag-row">
+        <span class="tag selected" style="background:#0047BB;color:#fff;border-color:#0047BB">海信蓝发光</span>
+        <span class="tag gold-selected">金色粒子</span>
+        <span class="tag" onclick="this.classList.toggle('selected')">蓝金渐变光效</span>
+        <span class="tag" onclick="this.classList.toggle('selected')">LOGO全息投影</span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="switchLayer(0)">← 返回</button>
+      <button class="btn btn-primary" onclick="switchLayer(2)">下一步：导演设计 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 层3：导演设计 -->
+<div class="layer-panel" id="layer2">
+  <div class="card">
+    <div class="card-title"><i class="ti ti-eye" aria-hidden="true"></i> 空间关系 / 俯视布局</div>
+    <div class="grid-2">
+      <div>
+        <label class="field-label" style="display:block;margin-bottom:6px;">画布速写 <span>点击绘制摄像机路线</span></label>
+        <canvas class="camera-path-canvas" id="camCanvas" width="300" height="300"></canvas>
+        <div class="btn-row" style="margin-top:6px;">
+          <button class="btn" onclick="clearCanvas()">清除</button>
+        </div>
+      </div>
+      <div>
+        <div class="field-group">
+          <label class="field-label">主场景布局描述</label>
+          <textarea rows="3" placeholder="例：产品居中，背景埃菲尔铁塔大景，镜头从左侧低角度环绕扫过..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">镜头运动总策略</label>
+          <div class="tag-row">
+            <span class="tag" onclick="this.classList.toggle('selected')">推进</span>
+            <span class="tag" onclick="this.classList.toggle('selected')">拉远</span>
+            <span class="tag" onclick="this.classList.toggle('selected')">环绕</span>
+            <span class="tag" onclick="this.classList.toggle('selected')">升格</span>
+            <span class="tag" onclick="this.classList.toggle('selected')">跟随</span>
+            <span class="tag" onclick="this.classList.toggle('selected')">仰拍</span>
+            <span class="tag" onclick="this.classList.toggle('selected')">俯拍</span>
+            <span class="tag" onclick="this.classList.toggle('selected')">侧移</span>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">镜头总数</label>
+          <select id="shotCount" onchange="renderShots()">
+            <option value="4">4镜头</option>
+            <option value="6">6镜头</option>
+            <option value="8" selected>8镜头</option>
+            <option value="10">10镜头</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><i class="ti ti-sun" aria-hidden="true"></i> 灯光风格</div>
+    <div class="grid-2">
+      <div class="field-group">
+        <label class="field-label">主光源</label>
+        <div class="tag-row">
+          <span class="tag selected" onclick="this.classList.toggle('selected')">自然光</span>
+          <span class="tag" onclick="this.classList.toggle('selected')">夜间霓虹</span>
+          <span class="tag" onclick="this.classList.toggle('selected')">黄金时刻</span>
+          <span class="tag" onclick="this.classList.toggle('selected')">冷蓝侧光</span>
+          <span class="tag" onclick="this.classList.toggle('selected')">聚光强对比</span>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">色调倾向</label>
+        <div class="tag-row">
+          <span class="tag" onclick="this.classList.toggle('selected')">蓝调冷色</span>
+          <span class="tag selected" onclick="this.classList.toggle('selected')">蓝金对比</span>
+          <span class="tag" onclick="this.classList.toggle('selected')">暖橙夜景</span>
+          <span class="tag" onclick="this.classList.toggle('selected')">去饱和电影</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><i class="ti ti-music" aria-hidden="true"></i> 音频 / 情绪关键词</div>
+    <div class="grid-2">
+      <div class="field-group">
+        <label class="field-label">音效设计</label>
+        <input type="text" placeholder="例：人群欢呼、哨声、节拍鼓点、空调风声..." />
+      </div>
+      <div class="field-group">
+        <label class="field-label">情绪弧线</label>
+        <input type="text" placeholder="例：期待→震撼→热血→品牌自信" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="switchLayer(1)">← 返回</button>
+      <button class="btn btn-primary" onclick="switchLayer(3)">下一步：填写分镜 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 层4：分镜脚本 -->
+<div class="layer-panel" id="layer3">
+  <div class="card">
+    <div class="card-title"><i class="ti ti-layout-grid" aria-hidden="true"></i> 逐镜头填写 <span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">每格对应Seedance一个提示词段落</span></div>
+    <div class="shot-grid" id="shotGrid"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="switchLayer(2)">← 返回</button>
+      <button class="btn btn-primary" onclick="switchLayer(4)">生成提示词 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 层5：输出 -->
+<div class="layer-panel" id="layer4">
+  <div class="output-section">
+    <div class="output-tab-row">
+      <button class="output-tab active" onclick="switchOutput(0,this)">GPT Image 故事板</button>
+      <button class="output-tab" onclick="switchOutput(1,this)">Seedance 段1</button>
+      <button class="output-tab" onclick="switchOutput(2,this)">Seedance 段2</button>
+      <button class="output-tab" onclick="switchOutput(3,this)">完整SOP文档</button>
+    </div>
+    <div class="output-content">
+      <div id="outPanel0">
+        <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">复制后粘贴至 GPT Image 2，生成9宫格故事板</div>
+        <div class="prompt-output" id="gptPrompt">点击「生成提示词」后自动填充...</div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="generatePrompts()">生成所有提示词 ↗</button>
+          <button class="btn" onclick="copyText('gptPrompt')">复制</button>
+        </div>
+      </div>
+      <div id="outPanel1" style="display:none;">
+        <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">Seedance 2.0 · 第一段 · 文生视频（图生视频需@产品图）</div>
+        <div class="prompt-output" id="seed1Prompt">生成后显示...</div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="copyText('seed1Prompt')">复制段1提示词</button>
+        </div>
+      </div>
+      <div id="outPanel2" style="display:none;">
+        <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">Seedance 2.0 · 第二段 · 上传@Video1保持色调连贯</div>
+        <div class="prompt-output" id="seed2Prompt">生成后显示...</div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="copyText('seed2Prompt')">复制段2提示词</button>
+        </div>
+      </div>
+      <div id="outPanel3" style="display:none;">
+        <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">完整SOP · 可发给协作者或存档</div>
+        <div class="prompt-output" id="fullSop" style="min-height:200px;">生成后显示...</div>
+        <div class="btn-row">
+          <button class="btn" onclick="copyText('fullSop')">复制全文</button>
+          <button class="btn btn-primary" onclick="sendPrompt('请帮我优化这份故事板的分镜提示词，让Seedance生成效果更好')">让阿龙AI优化 ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-top:12px;">
+    <button class="btn" onclick="switchLayer(3)">← 返回分镜</button>
+    <button class="btn btn-primary" onclick="generatePrompts()">重新生成提示词</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+let currentLayer = 0;
+
+const defaultShots = [
+  {title:'建立·远景',motion:'固定/推进',content:'',action:'',emotion:'柔和·建立',light:'全景自然光',duration:'2s'},
+  {title:'推进·中远景',motion:'缓慢推进',content:'',action:'',emotion:'期待·压迫',light:'全景逆光',duration:'2s'},
+  {title:'产品入画·中景',motion:'侧移平移',content:'',action:'',emotion:'震撼·惊喜',light:'侧光主光源',duration:'1.5s'},
+  {title:'特写·近景',motion:'跟随移动',content:'',action:'',emotion:'专注·细节',light:'近景高对比',duration:'2s'},
+  {title:'升格·近景',motion:'轻微升格',content:'',action:'',emotion:'坚定·冷静',light:'冷色侧光',duration:'1.5s'},
+  {title:'环绕·中近景',motion:'环绕运镜',content:'',action:'',emotion:'激烈·变幻',light:'剑光交叠',duration:'2s'},
+  {title:'仰拍·近景',motion:'仰拍推近',content:'',action:'',emotion:'决绝·硬！',light:'强烈逆光',duration:'2s'},
+  {title:'拉远·大远景',motion:'快速拉远',content:'',action:'',emotion:'震撼·余波',light:'爆发光效',duration:'2s'},
+];
+
+function renderShots() {
+  const count = parseInt(document.getElementById('shotCount').value);
+  const grid = document.getElementById('shotGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const s = defaultShots[i] || {title:`镜头${i+1}`,motion:'',content:'',action:'',emotion:'',light:'',duration:'1.5s'};
+    grid.innerHTML += `
+    <div class="shot-card">
+      <div class="shot-header">
+        <div class="shot-num">${i+1}</div>
+        <input class="shot-title-input" id="st${i}" value="${s.title}" placeholder="镜头名称/运镜类型" />
+        <span class="shot-duration" id="sd${i}">${s.duration}</span>
+      </div>
+      <div class="shot-body">
+        <div class="shot-field">
+          <div class="shot-field-label">运镜方式</div>
+          <textarea id="sm${i}" placeholder="例：缓慢推进、环绕、升格...">${s.motion}</textarea>
+        </div>
+        <div class="shot-field">
+          <div class="shot-field-label">画面内容</div>
+          <textarea id="sc${i}" placeholder="描述画面中有什么..."></textarea>
+        </div>
+        <div class="shot-field">
+          <div class="shot-field-label">情绪/角色动作</div>
+          <textarea id="sa${i}" placeholder="角色做什么，情绪如何..."></textarea>
+        </div>
+      </div>
+      <div class="shot-extra">
+        <div class="shot-extra-field">
+          <div class="shot-field-label">灯光</div>
+          <input id="sl${i}" value="${s.light}" placeholder="光源..." />
+        </div>
+        <div class="shot-extra-field">
+          <div class="shot-field-label">情绪词</div>
+          <input id="se${i}" value="${s.emotion}" placeholder="情绪..." />
+        </div>
+        <div class="shot-extra-field">
+          <div class="shot-field-label">时长</div>
+          <input id="sdur${i}" value="${s.duration}" placeholder="秒" />
+        </div>
+        <div class="shot-extra-field">
+          <div class="shot-field-label">对白/音效</div>
+          <input id="saud${i}" value="" placeholder="无/哨声..." />
+        </div>
+      </div>
+    </div>`;
+  }
+}
+
+function switchLayer(n) {
+  document.querySelectorAll('.layer-panel').forEach((p,i)=>{
+    p.classList.toggle('active', i===n);
+  });
+  document.querySelectorAll('.layer-tab').forEach((t,i)=>{
+    t.classList.toggle('active', i===n);
+  });
+  document.querySelectorAll('.progress-step').forEach((s,i)=>{
+    s.classList.toggle('done', i<=n);
+  });
+  currentLayer = n;
+}
+
+function switchOutput(n, btn) {
+  document.querySelectorAll('[id^="outPanel"]').forEach((p,i)=>{
+    p.style.display = i===n ? 'block' : 'none';
+  });
+  document.querySelectorAll('.output-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function toggleTag(el, group) {
+  el.classList.toggle('selected');
+}
+
+function setSeg(n, el) {
+  document.querySelectorAll('#segTag .tag').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');
+  const plan = document.getElementById('segPlan');
+  const labels = ['第一段（开篇/建立）','第二段（发展/高潮）','第三段（产品特写）','第四段（品牌收尾）'];
+  const metas = ['文生视频 · 8-10s · 720p草稿','@Video1保持色调 · 8-10s','@Video2延续画面 · 8-10s','@Video3收尾 · 8-10s'];
+  plan.innerHTML = '';
+  for(let i=0;i<n;i++) {
+    plan.innerHTML += `<div class="segment-row">
+      <div class="seg-num">${i+1}</div>
+      <div class="seg-label">${labels[i]}</div>
+      <div class="seg-meta">${metas[i]}</div>
+    </div>`;
+  }
+}
+
+function generatePrompts() {
+  const title = document.getElementById('projTitle').value || '海信空调世界杯系列';
+  const id = document.getElementById('projId').value || 'WC-01';
+  const platform = document.getElementById('platform').value;
+  const res = document.getElementById('resolution').value;
+  const count = parseInt(document.getElementById('shotCount').value);
+
+  let shotDescs = [];
+  for(let i=0;i<count;i++) {
+    const t = document.getElementById(`st${i}`)?.value || `镜头${i+1}`;
+    const m = document.getElementById(`sm${i}`)?.value || '';
+    const c = document.getElementById(`sc${i}`)?.value || '';
+    const a = document.getElementById(`sa${i}`)?.value || '';
+    const l = document.getElementById(`sl${i}`)?.value || '';
+    const dur = document.getElementById(`sdur${i}`)?.value || '2s';
+    shotDescs.push(`[镜头${i+1}·${t}] 运镜:${m||'固定'} | 画面:${c||'待填写'} | 动作:${a||'待填写'} | 灯光:${l} | 时长:${dur}`);
+  }
+
+  const gpt = `# ${title}（${id}）· 故事板提示词 · ${platform}
+
+## GPT Image 2 九宫格故事板
+
+生成一张3x3九宫格故事板，电影分镜风格，蓝金色调（海信蓝#0047BB+金色#D4AF37），每格标注镜头编号。
+
+风格参考：电影级TVC广告，海信空调品牌，${platform}竖屏构图，${res}质感。
+
+分镜内容：
+${shotDescs.join('\n')}
+
+整体色调：冷蓝主调，金色点缀，科技感+情感温度并存。
+左上角标注「${title}」，右下角「HISENSE ×AI」。`;
+
+  const half = Math.ceil(count/2);
+  const seed1 = `# Seedance 2.0 · 第一段提示词
+
+@产品正面图（权重70%）@产品侧面图（权重30%）
+
+${shotDescs.slice(0,half).join('\n')}
+
+镜头风格：电影级TVC，${platform}竖屏，海信蓝冷调，金色粒子特效，运镜流畅，4K质感，无水印。
+时长：${half*2}秒以内。生成后保存为Video1。`;
+
+  const seed2 = `# Seedance 2.0 · 第二段提示词
+
+@Video1（保持色调连贯）@产品正面图（权重70%）
+
+${shotDescs.slice(half).join('\n')}
+
+延续Video1的色调与运镜风格，完成品牌收尾。海信蓝发光LOGO入画，金色粒子扩散，震撼结尾。
+时长：${(count-half)*2}秒以内。`;
+
+  const sop = `# ${title} 完整SOP文档
+编号：${id} | 平台：${platform} | 分辨率：${res}
+
+## 层1 项目参数
+标题：${title}
+平台：${platform} | 分辨率：${res}
+
+## 层2 视觉参考
+产品图：@正面（70%）+ @侧面（30%）
+场景：${document.getElementById('scenePrompt')?.value || '待填写'}
+
+## 层3 导演设计
+镜头数：${count}
+
+## 层4 分镜脚本
+${shotDescs.join('\n')}
+
+## 层5 生产SOP
+步骤1：GPT Image生成产品多视角参考图
+步骤2：GPT Image生成场景概念图
+步骤3：GPT Image生成故事板九宫格（使用上方提示词）
+步骤4：即梦/Seedance生成第一段，保存@Video1
+步骤5：上传@Video1，生成第二段，保持色调连贯
+步骤6：剪映合并，加BGM，输出成片
+
+---
+工具：GPT Image 2 + Seedance 2.0（即梦高级会员）
+生成日期：${new Date().toLocaleDateString('zh-CN')}`;
+
+  document.getElementById('gptPrompt').textContent = gpt;
+  document.getElementById('seed1Prompt').textContent = seed1;
+  document.getElementById('seed2Prompt').textContent = seed2;
+  document.getElementById('fullSop').textContent = sop;
+
+  switchLayer(4);
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+let drawing = false;
+let lastX = 0, lastY = 0;
+
+function initCanvas() {
+  const canvas = document.getElementById('camCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0,71,187,0.05)';
+  ctx.fillRect(0,0,300,300);
+  ctx.strokeStyle = 'rgba(0,71,187,0.15)';
+  ctx.setLineDash([4,4]);
+  for(let i=1;i<3;i++) {
+    ctx.beginPath(); ctx.moveTo(i*100,0); ctx.lineTo(i*100,300); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*100); ctx.lineTo(300,i*100); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(0,71,187,0.6)';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('点击拖拽绘制摄像机路线', 20, 20);
+
+  canvas.addEventListener('mousedown', e=>{
+    drawing=true;
+    const r=canvas.getBoundingClientRect();
+    lastX=(e.clientX-r.left)*(canvas.width/r.width);
+    lastY=(e.clientY-r.top)*(canvas.height/r.height);
+  });
+  canvas.addEventListener('mousemove', e=>{
+    if(!drawing) return;
+    const r=canvas.getBoundingClientRect();
+    const x=(e.clientX-r.left)*(canvas.width/r.width);
+    const y=(e.clientY-r.top)*(canvas.height/r.height);
+    ctx.beginPath();
+    ctx.strokeStyle='#D4AF37';
+    ctx.lineWidth=2;
+    ctx.moveTo(lastX,lastY);
+    ctx.lineTo(x,y);
+    ctx.stroke();
+    lastX=x; lastY=y;
+  });
+  canvas.addEventListener('mouseup',()=>drawing=false);
+  canvas.addEventListener('mouseleave',()=>drawing=false);
+}
+
+function clearCanvas() {
+  const canvas = document.getElementById('camCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,300,300);
+  initCanvas();
+}
+
+renderShots();
+setTimeout(initCanvas, 100);
+</script>
